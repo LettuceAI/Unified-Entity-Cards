@@ -1,10 +1,24 @@
-# Unified Entity Card (UEC) Proposal
+# Unified Entity Card (UEC)
 
-This repo proposes a single, portable JSON format for representing either a Character or a Persona. The goal is cross-platform interoperability: platforms that only understand one entity type can still read the file safely, while platforms that understand both can support sharing, export, and import without special casing.
+Links: npm https://www.npmjs.com/package/unified-entity-card | PyPI https://pypi.org/project/unified-entity-card/0.1.1/ | crates.io https://crates.io/crates/unified-entity-card
 
-## Summary
+[![npm version](https://img.shields.io/npm/v/unified-entity-card.svg)](https://www.npmjs.com/package/unified-entity-card)
+[![PyPI version](https://img.shields.io/pypi/v/unified-entity-card.svg)](https://pypi.org/project/unified-entity-card/0.1.0/)
+[![crates.io](https://img.shields.io/crates/v/unified-entity-card.svg)](https://crates.io/crates/unified-entity-card)
+[![MIT license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-The Unified Entity Card (UEC) is a single JSON file with these top-level fields:
+Mission: make character and persona cards portable, stable, and easy to share across tools without losing fidelity.
+
+Unified Entity Card (UEC) is a portable JSON container that can represent either a Character or a Persona. The format is designed for interoperability: tools that only support one entity type can still parse the file safely, and tools that support both can round-trip without special casing.
+
+## Goals
+
+- Single file format for characters and personas.
+- Backward-friendly evolution via explicit schema versioning.
+- Clear separation of canonical data from app-specific presentation data.
+- Safe extension surface for vendor-specific fields.
+
+## File structure
 
 ```json
 {
@@ -17,84 +31,49 @@ The Unified Entity Card (UEC) is a single JSON file with these top-level fields:
 }
 ```
 
-- `schema` identifies the file type and version.
-- `kind` declares whether the payload is a character or persona.
-- `payload` maps 1:1 with existing schemas.
-- `app_specific_settings` holds presentation-only UI preferences.
-- `meta` tracks provenance and lifecycle.
-- `extensions` allows vendor-specific data.
+### `schema`
+Global identity and versioning.
 
-## Detailed rationale
+- `name`: fixed identifier, currently `"UEC"`.
+- `version`: schema version string.
+- `compat` (optional): minimum compatible version.
 
-### 1) `schema`: global identity + versioning
-The `schema` object tells any consumer exactly what it is parsing.
+### `kind`
+Discriminated union.
 
-- `name`: fixed identifier for the file type, for example `"UEC"`.
-- `version`: the current schema version.
-- `compat` (optional): minimum compatible version for safe parsing.
+- `"character"` -> `payload` matches `CharacterSchema`.
+- `"persona"` -> `payload` matches `PersonaSchema`.
 
-This enables explicit version checks and safe forward compatibility.
+### `payload`
+Canonical data, mapped 1:1 to existing schemas.
 
-### 2) `kind`: discriminated union
-`kind` explicitly declares what the payload represents.
+Character payload typically includes:
+- identity and description fields
+- `definitions` (LLM-facing explanation)
+- `tags` (search/grouping)
+- `avatar` (base64 data URI or https URL)
+- `chatBackground` (base64 data URI or https URL)
+- `systemPrompt` (prompt text, or `_ID:<id>` to reference a template)
+- rules, scenes, and voice configuration
 
-- `"character"` means the payload matches `CharacterSchema`.
-- `"persona"` means the payload matches `PersonaSchema`.
+Scene variants, when present, use objects with `id`, `content`, and `createdAt` fields (additional fields are allowed).
 
-This avoids ambiguity while keeping the file universal.
+Persona payload typically includes:
+- title, description, `avatar` (base64 data URI or https URL), and default flag
 
-### 3) `payload`: the canonical data
-`payload` stays 1:1 with existing schemas, so there is no loss of fidelity.
+### `app_specific_settings`
+Opaque object reserved for UI/app defaults. Consumers should treat this as optional and non-canonical. Validation only checks that it is an object if present.
 
-- Character payload includes identity, behavior, definitions, tags, scenes, and voice settings.
-- Persona payload includes title, description, avatar, and default flag.
+### `meta`
+Provenance and lifecycle metadata (created/updated timestamps, source, authors, license).
 
-This preserves current data models while enabling export/import in a unified format.
-
-Character-specific addition:
-- `definitions`: a freeform string used to explain the character to an LLM.
-- `tags`: a list of short labels used for search, grouping, or filtering.
-
-### 4) `app_specific_settings`: platform UX data
-This section isolates presentation details and app-level defaults that should not be treated as canonical across platforms, such as gradients, text colors, or memory mode. Other platforms can safely ignore this section without breaking core behavior.
-
-Current fields:
-- `disableAvatarGradient`
-- `customGradientEnabled`
-- `customGradientColors`
-- `customTextColor`
-- `customTextSecondary`
-- `memoryType`
-
-Platforms may reuse this section or store their own data under `extensions`.
-
-### 5) `meta`: provenance and lifecycle
-Metadata is separated from content so consumers can manage data ownership and attribution.
-
-Common uses:
-- `createdAt` / `updatedAt` for file versioning
-- `source` to track origin (app name, import source)
-- `authors` to list creators
-- `license` to preserve redistribution terms
-
-### 6) `extensions`: safe vendor extensions
-`extensions` is an open object for vendor-specific data. Platforms can namespace their data to avoid collisions:
-
-```json
-{
-  "extensions": {
-    "com.vendor.product": {
-      "customField": "value"
-    }
-  }
-}
-```
+### `extensions`
+Open object for vendor-specific fields. Namespace keys (e.g. `"com.vendor.product"`) to avoid collisions.
 
 ## Examples
 
-Character example: `examples/character.uec`
-
-Persona example: `examples/persona.uec`
+- Character: `examples/character.uec`
+- Persona: `examples/persona.uec`
 
 ## Libraries
 
@@ -117,8 +96,6 @@ if (!result.ok) {
 }
 ```
 
-Validation is structural by default; pass `{ strict: true }` to enforce required fields. The validator treats `app_specific_settings` as an opaque object (only checks it is an object if present). Use `assertUEC` to throw on invalid cards or `isUEC` for boolean checks.
-
 Python (`python/`):
 
 ```python
@@ -138,7 +115,7 @@ Rust (`rust/`):
 
 ```rust
 use serde_json::json;
-use uec::validate_uec;
+use unified_entity_card::validate_uec;
 
 let card = json!({
   "schema": { "name": "UEC", "version": "1.0" },
@@ -151,11 +128,6 @@ assert!(result.ok);
 ```
 
 Language-specific READMEs live in `js/README.md`, `python/README.md`, and `rust/README.md`.
-
-Package links:
-- npm: https://www.npmjs.com/package/unified-entity-card
-- PyPI: https://pypi.org/project/unified-entity-card/0.1.0/
-- crates.io: https://crates.io/crates/unified-entity-card
 
 ## File extension recommendation
 

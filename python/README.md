@@ -2,7 +2,7 @@
 
 Lightweight helpers for creating and validating Unified Entity Cards.
 
-pypi: https://pypi.org/project/unified-entity-card/0.1.0/
+pypi: https://pypi.org/project/unified-entity-card/0.1.1/
 
 ## Usage
 
@@ -21,3 +21,5 @@ if not result.ok:
 ```
 
 `app_specific_settings` is treated as an opaque object. Validation focuses on schema, kind, and payload structure.
+
+If `systemPrompt` is a template ID, pass `system_prompt_is_id=True` to `create_character_uec`. It will store the prompt as `_ID:<id>`.

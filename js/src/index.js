@@ -23,13 +23,31 @@ const optionalStringArray = (value) =>
   value === undefined ||
   (Array.isArray(value) && value.every((item) => isString(item)));
 
-const optionalUnknownArray = (value) =>
-  value === undefined || (Array.isArray(value) && value.length >= 0);
-
 const optionalObject = (value) => value === undefined || isPlainObject(value);
 
 const pushError = (errors, path, message) => {
   errors.push(`${path}: ${message}`);
+};
+
+const normalizeSystemPrompt = (payload, systemPromptIsId) => {
+  if (!systemPromptIsId) {
+    return payload;
+  }
+
+  if (!isPlainObject(payload)) {
+    return payload;
+  }
+
+  const systemPrompt = payload.systemPrompt;
+  if (!isString(systemPrompt)) {
+    return payload;
+  }
+
+  if (systemPrompt.startsWith("_ID:")) {
+    return payload;
+  }
+
+  return { ...payload, systemPrompt: `_ID:${systemPrompt}` };
 };
 
 const validateSchema = (schema, errors) => {
@@ -122,8 +140,30 @@ const validateScene = (scene, path, errors, options) => {
     pushError(errors, `${path}.createdAt`, "must be a number");
   }
 
-  if (!optionalUnknownArray(scene.variants)) {
-    pushError(errors, `${path}.variants`, "must be an array");
+  if (scene.variants !== undefined) {
+    if (!Array.isArray(scene.variants)) {
+      pushError(errors, `${path}.variants`, "must be an array");
+    } else {
+      scene.variants.forEach((variant, index) => {
+        const variantPath = `${path}.variants[${index}]`;
+        if (!isPlainObject(variant)) {
+          pushError(errors, variantPath, "must be an object");
+          return;
+        }
+
+        if (!isString(variant.id)) {
+          pushError(errors, `${variantPath}.id`, "must be a string");
+        }
+
+        if (!isString(variant.content)) {
+          pushError(errors, `${variantPath}.content`, "must be a string");
+        }
+
+        if (!isNumber(variant.createdAt)) {
+          pushError(errors, `${variantPath}.createdAt`, "must be a number");
+        }
+      });
+    }
   }
 
   if (
@@ -192,16 +232,12 @@ const validateCharacterPayload = (payload, errors, options) => {
     pushError(errors, "payload.tags", "must be an array of strings");
   }
 
-  if (!optionalString(payload.avatarPath)) {
-    pushError(errors, "payload.avatarPath", "must be a string or null");
+  if (!optionalString(payload.avatar)) {
+    pushError(errors, "payload.avatar", "must be a string or null");
   }
 
-  if (!optionalString(payload.backgroundImagePath)) {
-    pushError(
-      errors,
-      "payload.backgroundImagePath",
-      "must be a string or null",
-    );
+  if (!optionalString(payload.chatBackground)) {
+    pushError(errors, "payload.chatBackground", "must be a string or null");
   }
 
   if (!optionalStringArray(payload.rules)) {
@@ -226,8 +262,8 @@ const validateCharacterPayload = (payload, errors, options) => {
     pushError(errors, "payload.defaultModelId", "must be a string or null");
   }
 
-  if (!optionalString(payload.promptTemplateId)) {
-    pushError(errors, "payload.promptTemplateId", "must be a string or null");
+  if (!optionalString(payload.systemPrompt)) {
+    pushError(errors, "payload.systemPrompt", "must be a string or null");
   }
 
   validateVoiceConfig(payload.voiceConfig, errors);
@@ -285,8 +321,8 @@ const validatePersonaPayload = (payload, errors, options) => {
     pushError(errors, "payload.description", "must be a string");
   }
 
-  if (!optionalString(payload.avatarPath)) {
-    pushError(errors, "payload.avatarPath", "must be a string or null");
+  if (!optionalString(payload.avatar)) {
+    pushError(errors, "payload.avatar", "must be a string or null");
   }
 
   if (!optionalBoolean(payload.isDefault)) {
@@ -323,6 +359,7 @@ export const createUEC = ({
   appSpecificSettings,
   meta,
   extensions,
+  systemPromptIsId,
 } = {}) => {
   if (!kind) {
     throw new Error("kind is required");
@@ -332,10 +369,15 @@ export const createUEC = ({
     throw new Error("payload must be an object");
   }
 
+  const normalizedPayload =
+    kind === "character"
+      ? normalizeSystemPrompt(payload, systemPromptIsId)
+      : payload;
+
   return {
     schema: { ...DEFAULT_SCHEMA, ...(schema || {}) },
     kind,
-    payload,
+    payload: normalizedPayload,
     app_specific_settings: appSpecificSettings || {},
     meta: meta || {},
     extensions: extensions || {},

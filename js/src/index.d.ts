@@ -37,8 +37,15 @@ export interface CharacterScene {
   content: string;
   direction?: string;
   createdAt?: number;
-  variants?: unknown[];
+  variants?: MessageVariant[];
   selectedVariantId?: string | null;
+  [key: string]: unknown;
+}
+
+export interface MessageVariant {
+  id: string;
+  content: string;
+  createdAt: number;
   [key: string]: unknown;
 }
 
@@ -53,15 +60,15 @@ export interface CharacterPayload {
   id: string;
   name: string;
   description?: string;
-  avatarPath?: string | null;
-  backgroundImagePath?: string | null;
+  avatar?: string | null;
+  chatBackground?: string | null;
   definitions?: string;
   tags?: string[];
   rules?: string[];
   scenes?: CharacterScene[];
   defaultSceneId?: string | null;
   defaultModelId?: string | null;
-  promptTemplateId?: string | null;
+  systemPrompt?: string | null;
   voiceConfig?: VoiceConfig | null;
   voiceAutoplay?: boolean;
   createdAt?: number;
@@ -73,7 +80,7 @@ export interface PersonaPayload {
   id: string;
   title: string;
   description?: string;
-  avatarPath?: string | null;
+  avatar?: string | null;
   isDefault?: boolean;
   createdAt?: number;
   updatedAt?: number;
@@ -116,6 +123,7 @@ export function createUEC(input: {
   appSpecificSettings?: UecAppSpecificSettings;
   meta?: UecMeta;
   extensions?: UecExtensions;
+  systemPromptIsId?: boolean;
 }): UecUnion;
 
 export function createCharacterUEC(
@@ -125,7 +133,8 @@ export function createCharacterUEC(
     appSpecificSettings?: UecAppSpecificSettings;
     meta?: UecMeta;
     extensions?: UecExtensions;
-  }
+    systemPromptIsId?: boolean;
+  },
 ): UecCharacter;
 
 export function createPersonaUEC(
@@ -135,11 +144,17 @@ export function createPersonaUEC(
     appSpecificSettings?: UecAppSpecificSettings;
     meta?: UecMeta;
     extensions?: UecExtensions;
-  }
+  },
 ): UecPersona;
 
-export function validateUEC(value: unknown, options?: ValidateOptions): ValidationResult;
+export function validateUEC(
+  value: unknown,
+  options?: ValidateOptions,
+): ValidationResult;
 
-export function isUEC(value: unknown, options?: ValidateOptions): value is UecUnion;
+export function isUEC(
+  value: unknown,
+  options?: ValidateOptions,
+): value is UecUnion;
 
 export function assertUEC(value: unknown, options?: ValidateOptions): UecUnion;

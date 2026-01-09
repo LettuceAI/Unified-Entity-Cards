@@ -31,3 +31,5 @@ assert_uec(&card, false).expect("card is invalid");
 ```
 
 `app_specific_settings` is treated as an opaque object. Validation focuses on schema, kind, and payload structure.
+
+If `systemPrompt` is a template ID, use `create_character_uec` with `system_prompt_is_id = true` to store it as `_ID:<id>`.

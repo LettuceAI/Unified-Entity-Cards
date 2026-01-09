@@ -1,7 +1,33 @@
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 pub const SCHEMA_NAME: &str = "UEC";
 pub const SCHEMA_VERSION: &str = "1.0";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UecSchema {
+    pub name: String,
+    pub version: String,
+    pub compat: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum UecKind {
+    Character,
+    Persona,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Uec {
+    pub schema: UecSchema,
+    pub kind: UecKind,
+    pub payload: Value,
+    #[serde(rename = "app_specific_settings")]
+    pub app_specific_settings: Option<Value>,
+    pub meta: Option<Value>,
+    pub extensions: Option<Value>,
+}
 
 #[derive(Debug, Clone)]
 pub struct ValidationResult {
@@ -48,16 +74,27 @@ fn optional_string_array(value: Option<&Value>) -> bool {
     }
 }
 
-fn optional_unknown_array(value: Option<&Value>) -> bool {
-    match value {
-        None | Some(Value::Null) => true,
-        Some(Value::Array(_)) => true,
-        _ => false,
-    }
-}
-
 fn push_error(errors: &mut Vec<String>, path: &str, message: &str) {
     errors.push(format!("{}: {}", path, message));
+}
+
+fn validate_variant(variant: &Value, path: &str, errors: &mut Vec<String>) {
+    let Value::Object(map) = variant else {
+        push_error(errors, path, "must be an object");
+        return;
+    };
+
+    if !map.get("id").map_or(false, is_string) {
+        push_error(errors, &format!("{}.id", path), "must be a string");
+    }
+
+    if !map.get("content").map_or(false, is_string) {
+        push_error(errors, &format!("{}.content", path), "must be a string");
+    }
+
+    if !map.get("createdAt").map_or(false, is_number) {
+        push_error(errors, &format!("{}.createdAt", path), "must be a number");
+    }
 }
 
 fn validate_schema(schema: Option<&Value>, errors: &mut Vec<String>) {
@@ -158,8 +195,14 @@ fn validate_scene(scene: &Value, path: &str, errors: &mut Vec<String>, strict: b
         push_error(errors, &format!("{}.createdAt", path), "must be a number");
     }
 
-    if !optional_unknown_array(map.get("variants")) {
-        push_error(errors, &format!("{}.variants", path), "must be an array");
+    if let Some(variants) = map.get("variants") {
+        if let Value::Array(items) = variants {
+            for (index, variant) in items.iter().enumerate() {
+                validate_variant(variant, &format!("{}.variants[{}]", path, index), errors);
+            }
+        } else {
+            push_error(errors, &format!("{}.variants", path), "must be an array");
+        }
     }
 
     if let Some(selected) = map.get("selectedVariantId") {
@@ -231,16 +274,12 @@ fn validate_character_payload(payload: &Value, errors: &mut Vec<String>, strict:
         push_error(errors, "payload.tags", "must be an array of strings");
     }
 
-    if !optional_string(map.get("avatarPath")) {
-        push_error(errors, "payload.avatarPath", "must be a string or null");
+    if !optional_string(map.get("avatar")) {
+        push_error(errors, "payload.avatar", "must be a string or null");
     }
 
-    if !optional_string(map.get("backgroundImagePath")) {
-        push_error(
-            errors,
-            "payload.backgroundImagePath",
-            "must be a string or null",
-        );
+    if !optional_string(map.get("chatBackground")) {
+        push_error(errors, "payload.chatBackground", "must be a string or null");
     }
 
     if !optional_string_array(map.get("rules")) {
@@ -263,12 +302,8 @@ fn validate_character_payload(payload: &Value, errors: &mut Vec<String>, strict:
         push_error(errors, "payload.defaultModelId", "must be a string or null");
     }
 
-    if !optional_string(map.get("promptTemplateId")) {
-        push_error(
-            errors,
-            "payload.promptTemplateId",
-            "must be a string or null",
-        );
+    if !optional_string(map.get("systemPrompt")) {
+        push_error(errors, "payload.systemPrompt", "must be a string or null");
     }
 
     validate_voice_config(map.get("voiceConfig"), errors);
@@ -326,8 +361,8 @@ fn validate_persona_payload(payload: &Value, errors: &mut Vec<String>, strict: b
         push_error(errors, "payload.description", "must be a string");
     }
 
-    if !optional_string(map.get("avatarPath")) {
-        push_error(errors, "payload.avatarPath", "must be a string or null");
+    if !optional_string(map.get("avatar")) {
+        push_error(errors, "payload.avatar", "must be a string or null");
     }
 
     if !optional_boolean(map.get("isDefault")) {
@@ -407,6 +442,52 @@ pub fn create_uec(
     Value::Object(root)
 }
 
+pub fn create_character_uec(
+    mut payload: Map<String, Value>,
+    system_prompt_is_id: bool,
+    schema: Option<Map<String, Value>>,
+    app_specific_settings: Option<Value>,
+    meta: Option<Value>,
+    extensions: Option<Value>,
+) -> Value {
+    if system_prompt_is_id {
+        if let Some(Value::String(prompt)) = payload.get("systemPrompt").cloned() {
+            if !prompt.starts_with("_ID:") {
+                payload.insert(
+                    "systemPrompt".to_string(),
+                    Value::String(format!("_ID:{}", prompt)),
+                );
+            }
+        }
+    }
+
+    create_uec(
+        "character",
+        Value::Object(payload),
+        schema,
+        app_specific_settings,
+        meta,
+        extensions,
+    )
+}
+
+pub fn create_persona_uec(
+    payload: Map<String, Value>,
+    schema: Option<Map<String, Value>>,
+    app_specific_settings: Option<Value>,
+    meta: Option<Value>,
+    extensions: Option<Value>,
+) -> Value {
+    create_uec(
+        "persona",
+        Value::Object(payload),
+        schema,
+        app_specific_settings,
+        meta,
+        extensions,
+    )
+}
+
 pub fn validate_uec(value: &Value, strict: bool) -> ValidationResult {
     let mut errors = Vec::new();
 
@@ -454,10 +535,10 @@ pub fn is_uec(value: &Value, strict: bool) -> bool {
     validate_uec(value, strict).ok
 }
 
-pub fn assert_uec(value: &Value, strict: bool) -> Result<(), String> {
+pub fn assert_uec(value: &Value, strict: bool) -> Result<Uec, String> {
     let result = validate_uec(value, strict);
     if result.ok {
-        Ok(())
+        serde_json::from_value(value.clone()).map_err(|err| format!("Invalid UEC: {}", err))
     } else {
         Err(format!("Invalid UEC: {}", result.errors.join("; ")))
     }
@@ -466,7 +547,7 @@ pub fn assert_uec(value: &Value, strict: bool) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{json, Map, Value};
 
     #[test]
     fn validates_minimal_character_non_strict() {
@@ -520,5 +601,89 @@ mod tests {
         });
 
         assert!(assert_uec(&card, false).is_err());
+    }
+
+    #[test]
+    fn assert_uec_returns_typed_object() {
+        let card = json!({
+          "schema": { "name": "UEC", "version": "1.0" },
+          "kind": "persona",
+          "payload": { "id": "per-3", "title": "Pragmatic Analyst" }
+        });
+
+        let uec = assert_uec(&card, false).expect("expected a valid UEC");
+        assert_eq!(uec.kind, UecKind::Persona);
+    }
+
+    #[test]
+    fn create_character_uec_prefixes_system_prompt() {
+        let mut payload = Map::new();
+        payload.insert("id".to_string(), Value::String("char-4".to_string()));
+        payload.insert("name".to_string(), Value::String("Aster Vale".to_string()));
+        payload.insert(
+            "systemPrompt".to_string(),
+            Value::String("template-1".to_string()),
+        );
+
+        let card = create_character_uec(payload, true, None, None, None, None);
+        let system_prompt = card
+            .get("payload")
+            .and_then(|value| value.get("systemPrompt"))
+            .and_then(|value| value.as_str());
+
+        assert_eq!(system_prompt, Some("_ID:template-1"));
+    }
+
+    #[test]
+    fn validates_scene_variants() {
+        let card = json!({
+          "schema": { "name": "UEC", "version": "1.0" },
+          "kind": "character",
+          "payload": {
+            "id": "char-5",
+            "name": "Aster Vale",
+            "scenes": [
+              {
+                "id": "scene-1",
+                "content": "You step into the Archive of Echoes.",
+                "variants": [
+                  {
+                    "id": "variant-1",
+                    "content": "You step into the Archive, where every echo is logged.",
+                    "createdAt": 1715100001
+                  }
+                ]
+              }
+            ]
+          }
+        });
+
+        let result = validate_uec(&card, false);
+        assert!(result.ok);
+
+        let invalid = json!({
+          "schema": { "name": "UEC", "version": "1.0" },
+          "kind": "character",
+          "payload": {
+            "id": "char-6",
+            "name": "Aster Vale",
+            "scenes": [
+              {
+                "id": "scene-2",
+                "content": "You step into the Archive of Echoes.",
+                "variants": [
+                  { "content": "Missing id and createdAt" }
+                ]
+              }
+            ]
+          }
+        });
+
+        let invalid_result = validate_uec(&invalid, false);
+        assert!(!invalid_result.ok);
+        assert!(invalid_result
+            .errors
+            .iter()
+            .any(|err| err.contains("variants[0].id")));
     }
 }

@@ -22,3 +22,5 @@ if (!result.ok) {
 ```
 
 `app_specific_settings` is treated as an opaque object. Validation focuses on schema, kind, and payload structure.
+
+If `systemPrompt` is a template ID, pass `{ systemPromptIsId: true }` to `createCharacterUEC`. It will store the prompt as `_ID:<id>`.
