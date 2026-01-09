@@ -1,0 +1,11 @@
+{
+  "name": "unified-entity-card",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

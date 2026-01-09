@@ -1,0 +1,21 @@
+{
+  "schema": { "name": "UEC", "version": "1.0" },
+  "kind": "persona",
+  "payload": {
+    "id": "7b3c1a6f-9c2a-4b0e-8ad3-2e8f4d2c9a61",
+    "title": "Pragmatic Analyst",
+    "description": "Direct, grounded, and practical. Focuses on tradeoffs.",
+    "avatarPath": "avatars/personas/pragmatic-analyst.png",
+    "isDefault": false,
+    "createdAt": 1715200000,
+    "updatedAt": 1715200500
+  },
+  "app_specific_settings": {},
+  "meta": {
+    "createdAt": 1715200000,
+    "updatedAt": 1715200500,
+    "source": "lettuceai",
+    "authors": ["megalith"]
+  },
+  "extensions": {}
+}
