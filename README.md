@@ -150,7 +150,10 @@ let result = validate_uec(&card, true);
 assert!(result.ok);
 ```
 
-Language-specific READMEs live in `python/README.md` and `rust/README.md`.
+Language-specific READMEs live in `js/README.md`, `python/README.md`, and `rust/README.md`.
+
+Package links:
+- npm: https://www.npmjs.com/package/unified-entity-card
 
 ## File extension recommendation
 
