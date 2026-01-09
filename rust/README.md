@@ -2,6 +2,8 @@
 
 Lightweight helpers for validating Unified Entity Cards with `serde_json::Value`.
 
+crates.io: https://crates.io/crates/unified-entity-card
+
 ## Usage
 
 ```rust

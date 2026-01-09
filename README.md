@@ -154,6 +154,8 @@ Language-specific READMEs live in `js/README.md`, `python/README.md`, and `rust/
 
 Package links:
 - npm: https://www.npmjs.com/package/unified-entity-card
+- PyPI: https://pypi.org/project/unified-entity-card/0.1.0/
+- crates.io: https://crates.io/crates/unified-entity-card
 
 ## File extension recommendation
 

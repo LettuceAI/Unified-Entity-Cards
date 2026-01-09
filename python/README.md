@@ -2,6 +2,8 @@
 
 Lightweight helpers for creating and validating Unified Entity Cards.
 
+pypi: https://pypi.org/project/unified-entity-card/0.1.0/
+
 ## Usage
 
 ```python

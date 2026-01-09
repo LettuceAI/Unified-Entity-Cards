@@ -3,6 +3,10 @@ name = "unified-entity-card"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+readme = "README.md"
+description = "Unified Entity Card helpers for validating UEC JSON payloads."
+repository = "https://github.com/LettuceAI/Unified-Entity-Cards"
+keywords = ["uec", "character-card", "persona", "schema", "llm"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
