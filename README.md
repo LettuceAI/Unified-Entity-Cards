@@ -9,8 +9,6 @@ crates.io https://crates.io/crates/unified-entity-card
 [![crates.io](https://img.shields.io/crates/v/unified-entity-card.svg)](https://crates.io/crates/unified-entity-card)
 [![MIT license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Mission: make character and persona cards portable, stable, and easy to share across tools without losing fidelity.
-
 Unified Entity Card (UEC) is a portable JSON container that can represent either a Character or a Persona. The format is designed for interoperability: tools that only support one entity type can still parse the file safely, and tools that support both can round-trip without special casing.
 
 ## Goals
