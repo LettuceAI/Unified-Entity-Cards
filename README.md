@@ -1,12 +1,8 @@
 # Unified Entity Card (UEC)
 
-<<<<<<< HEAD
 Links: npm https://www.npmjs.com/package/unified-entity-card 
-PyPI https://pypi.org/project/unified-entity-card/0.1.1/
+PyPI https://pypi.org/project/unified-entity-card/0.2.0/
 crates.io https://crates.io/crates/unified-entity-card
-=======
-Links: npm https://www.npmjs.com/package/unified-entity-card | PyPI https://pypi.org/project/unified-entity-card/0.2.0/ | crates.io https://crates.io/crates/unified-entity-card
->>>>>>> d99d252 (docs(readme): update root README)
 
 [![npm version](https://img.shields.io/npm/v/unified-entity-card.svg)](https://www.npmjs.com/package/unified-entity-card)
 [![PyPI version](https://img.shields.io/pypi/v/unified-entity-card.svg)](https://pypi.org/project/unified-entity-card/0.2.0/)
