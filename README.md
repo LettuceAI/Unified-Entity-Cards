@@ -20,9 +20,22 @@ Unified Entity Card (UEC) is a portable JSON container that can represent either
 
 ## File structure
 
+v1:
 ```json
 {
   "schema": { "name": "UEC", "version": "1.0" },
+  "kind": "character",
+  "payload": {},
+  "app_specific_settings": {},
+  "meta": {},
+  "extensions": {}
+}
+```
+
+v2:
+```json
+{
+  "schema": { "name": "UEC", "version": "2.0" },
   "kind": "character",
   "payload": {},
   "app_specific_settings": {},
@@ -51,15 +64,15 @@ Character payload typically includes:
 - identity and description fields
 - `definitions` (LLM-facing explanation)
 - `tags` (search/grouping)
-- `avatar` (base64 data URI or https URL)
-- `chatBackground` (base64 data URI or https URL)
-- `systemPrompt` (prompt text, or `_ID:<id>` to reference a template)
-- rules, scenes, and voice configuration
+- `avatar` — v1: base64 data URI or https URL string; v2: string or asset locator object
+- `chatBackground` — v1: base64 data URI or https URL string; v2: string or asset locator object
+- `systemPrompt` (prompt text, or `_ID:<id>` to reference a template in v1)
+- v1: `rules`, `scenes` (array), `defaultSceneId`; v2: `scene` (single object with `selectedVariant`), `promptTemplateId`, `fallbackModelId`, `characterBook`, `nickname`, `creator`, `creatorNotes`, `source`
 
 Scene variants, when present, use objects with `id`, `content`, and `createdAt` fields (additional fields are allowed).
 
 Persona payload typically includes:
-- title, description, `avatar` (base64 data URI or https URL), and default flag
+- title, description, `avatar` (v1: string; v2: string or asset locator object), and default flag
 
 ### `app_specific_settings`
 Opaque object reserved for UI/app defaults. Consumers should treat this as optional and non-canonical. Validation only checks that it is an object if present.
@@ -72,8 +85,13 @@ Open object for vendor-specific fields. Namespace keys (e.g. `"com.vendor.produc
 
 ## Examples
 
+v1:
 - Character: `examples/character.uec`
 - Persona: `examples/persona.uec`
+
+v2:
+- Character: `examples/character_v2.uec`
+- Persona: `examples/persona_v2.uec`
 
 ## Libraries
 
