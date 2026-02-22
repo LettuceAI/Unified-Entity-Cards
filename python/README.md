@@ -1,25 +1,54 @@
 # Unified Entity Card Python Library
 
-Lightweight helpers for creating and validating Unified Entity Cards.
+Lightweight helpers for creating, converting, validating, and tooling Unified Entity Cards (v1 and v2).
 
-pypi: https://pypi.org/project/unified-entity-card/0.1.1/
+PyPI: https://pypi.org/project/unified-entity-card/
 
 ## Usage
 
 ```python
-from uec import create_character_uec, validate_uec
+from uec import create_character_uec_v2, validate_uec, convert_uec_v1_to_v2
 
-card = create_character_uec({
-  "id": "4c5d8e2a-7a7f-4cda-9f68-6a2b6f4f4f2f",
-  "name": "Aster Vale",
-  "description": "A methodical archivist who values evidence over rumor."
+v2 = create_character_uec_v2({
+    "id": "char-v2-1",
+    "name": "Aster Vale",
 })
 
-result = validate_uec(card, strict=True)
-if not result.ok:
-  print(result.errors)
+result = validate_uec(v2, strict=False)
+print(result.ok)
+
+v1 = {
+    "schema": {"name": "UEC", "version": "1.0"},
+    "kind": "character",
+    "payload": {"id": "char-1", "name": "Aster"},
+}
+
+upgraded = convert_uec_v1_to_v2(v1)
 ```
 
-`app_specific_settings` is treated as an opaque object. Validation focuses on schema, kind, and payload structure.
+## Highlights
 
-If `systemPrompt` is a template ID, pass `system_prompt_is_id=True` to `create_character_uec`. It will store the prompt as `_ID:<id>`.
+- Supports schema versions `1.0` and `2.0`
+- Version-aware validation
+- v1 -> v2 conversion helper
+- Parsing, normalization, and stable stringification
+- Upgrade/downgrade helpers
+- Diff and merge helpers
+- Asset extraction/rewriting helpers
+- Lint-style quality checks
+
+## Main API
+
+- `create_uec`, `create_character_uec`, `create_persona_uec`
+- `create_character_uec_v2`, `create_persona_uec_v2`
+- `validate_uec`, `validate_uec_strict`, `validate_uec_at_version`
+- `convert_uec_v1_to_v2`, `upgrade_uec`, `downgrade_uec`
+- `parse_uec`, `normalize_uec`, `stringify_uec`
+- `diff_uec`, `merge_uec`
+- `extract_assets`, `rewrite_assets`, `lint_uec`
+
+## Tests
+
+```bash
+cd python && python -m unittest discover -s tests -v
+```
